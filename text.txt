@@ -1,0 +1,1301 @@
+A Text-based Game
+Goals
+�	Design a game with pointer-linked spaces
+�	Use object-oriented programming concepts
+
+Requirements 
+In this project you will be able to design and implement a one-player, text-based game where the player can move through spaces to get items and accomplish goals.
+You have the freedom to decide what kind of them you would like to create for your game as long the requirements below are met.
+
+Space class
+1.	The game requires a Space class, which represents the space the player can be in. The Space class must be an abstract class that will have pure virtual functions.
+Inside the Space class, there must be at least 4 Space pointers: top, right, left, and bottom.
+Use the class to create a game with the structure of linked space. (You are free to add more Space pointers to the Space class, but must have at least 4 Space pointers)
+
+Note:
+�	Even if your structure is linear, such as a train, you still have at least 4 pointers in the Space class
+�	Any unused pointers need to point to NULL.
+
+2.	The game must have at least 3 derived classes that are derived from the Space
+Each representing a different type of space, and need to have a special action for the player to interact with. It can be opening the door to another space, or maybe attack the monster, or turn on the light switch, or sing a song to please the king.
+
+3.	The game must have at least 6 spaces.
+
+Gameplay
+1.	The game must have a theme. It can be a crime-solving theme, a fantasy game. The game must also have a goal for the player, so the player can complete the goal to achieve victory.
+2.	The game must keep track of which space the player is in. It can be in a form of visualized space, by printing the map out and indicate where the player is, or printing text describing where the player is at and what adjacent space is around the player�s space.
+3.	You must create a container for the player, to carry �items�. The container must have a capacity limit. The game must contain some items for the player to obtain in the game and one or more of these items must be required as part of the solution to accomplish game�s goal, such as a key to open a locked door, etc.
+4.	The game must have a time limit, which limits the amount of time/steps/turn the user can take before losing the game. The following are some notable examples of the time limit:
+1.	Step limit that limits the number of times the user can switch spaces.
+2.	Health system which decreases the player�s health point from space to space, and maybe some painkillers scattered around the spaces.
+Note: make sure you give enough steps to allow the game to perform testing.
+5.	Again, the user must be able to interact with parts of the space structure, not just collecting items to complete the game.
+
+Interface
+1.	At the beginning of the game, the goal of the game must be declared and printed to let the player know the goal of the game.
+2.	The game cannot contain free-form input. An example of free-form input would be to type out �kitchen� to go to the kitchen space in the game. It is tedious and counter-intuitive.
+3.	The game must provide the user a menu option for each scenario of the game.
+4.	You are not required to have a printed map to visualize space, a text-based game is sufficient. But, it would be great to have a printed map, it is easier to interact with, and it�s cool to show a cool game with a map 
+
+
+
+#include "stdafx.h"
+#include <iostream>
+#include <string>
+#include <time.h>
+#include <vector>
+using namespace std;
+
+int readNumber() { //reading number without errors
+	int number;
+	cin >> number;
+	while (cin.fail()) {
+		cout << "Wrong input! Please insert integer..." << endl;
+		cin.clear();
+		cin.ignore(numeric_limits<streamsize>::max(), '\n');
+		cin >> number;
+	}
+	return number;
+} 
+
+char readChar() { //reading character without errors
+	char character;
+	cin >> character;
+	while (cin.fail()) {
+		cout << "Wrong input! Please insert character..." << endl;
+		cin.clear();
+		cin.ignore(numeric_limits<streamsize>::max(), '\n');
+		cin >> character;
+	}
+	return character;
+}
+
+bool randChance(int rate) {
+	return ((rand() % 100) % rate == 0);
+}
+
+namespace counter {
+	int counter = 0;
+}
+
+class Item {
+public:
+	virtual ~Item() {};
+	virtual string name() = 0;
+	virtual void use() = 0;
+	virtual void desc() = 0;
+};
+
+class Bag {
+private:
+	int capacity;
+	vector<Item*> storage;
+	void listItems() { 
+		if (storage.size() == 0) { cout << "Bag is empty" << endl; }
+		else {
+			for (int i = 0; i < storage.size(); i++) {
+				cout << "(" << i+1 << ") " << storage[i]->name()<< endl;
+			}
+		}
+	}
+	void dropItem() {
+		listItems();
+		cout << "Insert number of item you want dropped: ";
+		int n = readNumber() - 1;
+		if (n >= 0 && n < storage.size()) {
+			if (!(storage[n]->name() == "Queen's amulet")) {
+				storage.erase(storage.begin() + n);
+			}
+			else {
+				cout << "Cannot drop that item!" << endl;
+			}
+			
+		} else { cout << "There is no item with that number..." << endl; }
+	}
+	void itemDesc() {
+		listItems();
+		cout << "Insert number of item you want described: ";
+		int n = readNumber() - 1;
+		if (n >= 0 && n < storage.size()) {
+			cout << "________________________________________________" << endl;
+			storage[n]->desc();
+		}
+		else { cout << "There is no item with that number..." << endl; }
+	}
+	void useItem() { 
+		listItems();
+		cout << "Insert number of item you want used: ";
+		int n = readNumber()-1;
+		if (n >= 0 && n < storage.size()) {
+			storage[n]->use();
+			if (storage[n]->name() == "Healing potion") {
+				storage.erase(storage.begin() + n);
+			}
+		}
+		else { cout << "There is no item with that number..." << endl; }
+	}
+public:
+	Bag() {
+		this->capacity = 10;
+	} 
+	Bag(int capacity) {
+		this->capacity = capacity;
+	}
+	~Bag() {
+		for (int i = 0; i < storage.size(); i++) {
+			delete storage[i];
+		}
+	}
+	bool placeItem() {
+		for (int i = 0; i < storage.size(); i++) {
+			if (storage[i]->name() == "Queen's amulet") {
+				storage.erase(storage.begin()+ i);
+				return true;
+			}
+		}
+		return false;
+	}
+	bool addItem(Item* item) { 
+		if (this->capacity == storage.size()) {
+			cout << "Bag is full. Want to drop some item from bag? (y/n)" << endl;
+			char ans = readChar();
+			if (tolower(ans) == 'y') {
+				dropItem();
+			} else {
+				return false;
+			}
+		}
+		storage.push_back(item);
+		return true;
+	}
+	void takeAction() {
+		int input = 0;
+		while (input != 4) {
+			cout << "________________________________________________" << endl;
+			cout << "What do you want to do? " << endl;
+			cout << "______________________________" << endl;
+			cout << "(1) Use item from bag " << endl;
+			cout << "(2) Drop item from bag " << endl;
+			cout << "(3) List items" << endl;
+			cout << "(4) Item description" << endl;
+			cout << "(5) Do nothing" << endl;
+			cout << "________________________________________________" << endl;
+			input = readNumber();
+			switch (input) {
+				case 1 :
+					useItem();
+					break;
+				case 2 : 
+					dropItem();
+					break;
+				case 3 : 
+					listItems();
+					break;
+				case 4:
+					itemDesc();
+					break;
+				default:
+					cout << "Wrong input... Try again" << endl;
+			}
+		}
+	}	
+};
+
+namespace Player {
+	int xp = 10;
+	int hp = 100;
+	int atk = 5;
+	int def = 5;
+	int speed = 1;
+	bool alive = true;
+	Bag* bag = new Bag();
+    void pickUpItem(Item* item) {
+		if (bag->addItem(item)) {
+			cout << "Item added to bag" << endl;
+		} else {
+			cout << "Bag full, can't add items to it" << endl;
+		}
+	}
+	void equipCloak() { speed = 2; }
+	void equipWeapon(int bonus) { atk = 5 + bonus; }
+	int attack() { return atk + xp/10; }
+	int lightningbolt() { return (int) floor(xp / 3); }
+	void gainXP(int _xp) { xp += _xp; cout << "+" << _xp <<"XP gained" << endl; }
+	void healthBuff(int buff, char dkb = 'n') { 
+		if (dkb == 'y' || buff>0) {
+			hp += buff; //damage from Dark Knight's Blade is not reduced by defense
+			//same goes for healing potion
+			if (hp > 100) hp = 100; //normalizing health
+		} else {
+			int damage = (buff + def);
+			if (damage >= 0) {
+				damage = -2;
+			}
+			hp += damage;
+			cout << "You lost " << abs(damage) << "HP." << endl;
+		} 
+	}
+	void showStatus() {
+		cout << "HP: " << hp << endl;
+		cout << "XP: " << xp << endl;
+		cout << "Attack: " << atk << endl;
+		cout << "Defense: " << def << endl;
+		cout << "Speed: " << speed << endl;
+	}
+	void destruct() { delete bag; }
+};
+
+class HealingPotion : public Item {
+	string name() { return "Healing potion"; }
+	void use() {
+		Player::healthBuff(20);
+		cout << "+20hp" << endl;
+	}
+	void desc() { cout << "Healing potion. Restores 20hp when used" << endl; }
+};
+
+class KnightsSpear : public Item {
+	string name() { return "Knight's spear"; }
+	void use() {
+		cout << "Knight's Spear equipped" << endl;
+		Player::equipWeapon(35);
+	}
+	void desc() { cout << "Knight's Spear. It deals additional 35 damage." << endl; }
+};
+
+class QueensAmulet : public Item {
+	string name() { return "Queen's amulet"; }
+	void use() { cout << "Nothing happens..." << endl; }
+	void desc() {
+		cout << "Queen's amulet. Legend says the Queen gave three amulets to her loyal bishops." << endl;
+		cout << "Now asleep she waits for a challenger to bring her all amulets" << endl;
+	}
+};
+
+class BishopsCloak : public Item {
+	string name() { return "Bishop's cloak"; }
+	void use() { 
+		cout << "Bishop's Cloak equipped" << endl;
+		Player::equipCloak();
+	}
+	void desc() { 
+		cout << "Bishop's Cloak. It's very light." << endl;
+		cout << "Allows you to attack twice during the same turn" << endl;
+	}
+};
+
+class DarkKnightBlade : public Item {
+	string name() { return "Dark Knight's blade"; }
+	void use() { 
+		cout << "Dark Knight's Blade equipped" << endl;
+		Player::equipWeapon(45); 
+		cout << "Dark energy from blade harms you. -20HP" << endl;
+		Player::healthBuff(-20,'y');
+	}
+	void desc() {
+		cout << "Dark Knight's Blade. It radiates dark energy." << endl;
+		cout << "Stronger than Knight's Spear, but decreases 20hp when equipped" << endl;
+	}
+};
+
+class Space {
+protected:
+	Space* top;
+	Space* bottom;
+	Space* left;
+	Space* right;
+	bool skipable;
+	bool checked;
+	bool isCleared;
+public:
+	Space() {
+	}
+	virtual ~Space() {
+		delete top;
+		delete bottom;
+		delete left;
+		delete right;
+	};
+	void setSides(Space* t, Space* b, Space* l, Space* r) {
+		this->top = t;
+		this->bottom = b;
+		this->right = r;
+		this->left = l;
+	}
+	bool checkPass(char f) {
+		if (f == 't') {
+			return top != NULL;
+		} else if(f == 'b') {
+			return bottom != NULL;
+		}
+		else if (f == 'l') {
+			return left != NULL;
+		}
+		else {
+			return right != NULL;
+		}
+	}
+	Space* getNeigh(char f) {
+		if (f == 't') {
+			return top;
+		}
+		else if (f == 'b') {
+			return bottom;
+		}
+		else if (f == 'l') {
+			return left;
+		}
+		else {
+			return right;
+		}
+	}
+	bool escape() { return (skipable || isCleared); };
+	virtual void description() = 0;
+	virtual void challenge() = 0;
+	virtual void checkSurroundings(Bag* bag) = 0;
+	void cleared() {
+		counter::counter++;
+		isCleared = true;
+	}
+	bool spaceCleared() { return this->isCleared; }
+};
+
+class EmptySpace : public Space {
+public:
+	EmptySpace() {
+		this->skipable = true;
+		this->checked = false;
+	}
+	~EmptySpace() {}
+	void description() {
+		cout << "This is castle's entrance. ";
+		if (!checked) {
+			cout << "Check your surroundings!";
+		}
+		cout << endl;
+	}
+	void challenge() { cout << "There is no one here to challenge..." << endl; }
+	void checkSurroundings(Bag* bag) { 
+		if (!checked) {
+			cout << "You found potion. It's being placed in your bag..." << endl;
+			//bag->addItem(new Map());
+			bag->addItem(new HealingPotion());
+			checked = true;
+		}
+		else {
+			cout << "You already checked this place." << endl;
+		}
+	}
+};
+
+class PawnSpace : public Space {
+private:
+	int a, b, sol;
+public:
+	PawnSpace() {
+		this->skipable = true;
+		this->checked = false;
+		this->isCleared = false;
+	}
+	~PawnSpace() {}
+	void challenge() {
+		description();
+		while (!isCleared && Player::alive) {
+			a = rand() % 20;
+			b = rand() % 20;
+			cout << a << " + " << b << " = ";
+			sol = readNumber();
+			if(sol == a + b) {
+				cleared();
+				
+				cout << "Challenge cleared!" << endl;
+				Player::gainXP(5);
+
+			}
+			else {
+				Player::healthBuff(-8);
+				if (Player::hp <= 0) {
+					Player::alive = false;
+				}
+			}
+		}
+	}
+	void description() { 
+		if (isCleared) {
+			cout << "This space is already cleared. Proceed to next one..." << endl;
+		}
+		else {
+			cout << "This is PawnSpace! Calculate sum in order to clear this room!" << endl;
+		}
+	}
+	void checkSurroundings(Bag* bag) {
+		if(!checked){
+			if (randChance(10)) { //one in 10 chance of getting a potion
+				cout << "You found potion! Do you want to place it in your bag? (y/n)" << endl;
+				char ans = readChar();
+				if (tolower(ans) == 'y') {
+					bag->addItem(new HealingPotion());
+				}
+			}
+			else { cout << "You found nothing..." << endl; }
+			checked = true;
+		}
+		else {
+			cout << "You already checked this place." << endl;
+		}
+	}
+};
+
+class RookSpace : public Space {
+private:
+	int a, b, sol, counter;
+public:
+	RookSpace() {
+		this->skipable = false;
+		this->isCleared = false;
+		this->checked = false;
+		counter = 0;
+	}
+	~RookSpace() {}
+	void challenge() {
+		int guess;
+		description();
+		if(!isCleared){
+			a = rand() % 10;
+			b = a + 24;
+			sol = rand() % 24 + a;
+			cout << "Number is in range [" << a << "," << b << "], can you guess it?" << endl;
+		}
+		while (!isCleared && Player::alive) {
+			cout << "Your guess : ";
+			guess = readNumber();
+			counter++;
+			if (guess == sol) {
+				cleared();
+				cout << "Challenge cleared!" << endl;
+
+				if (counter <= 4) {
+					if (randChance(2)) {
+						cout << "You got enchantment: Guarded. +3 Defense" << endl;
+						Player::def += 3;
+					}
+				}
+				else { 
+					if (randChance(10)) {
+						cout << "You got enchantment: Guarded. +3 Defense" << endl;
+						Player::def += 3;
+					}
+				}
+				Player::gainXP(15);
+			}
+			else if (guess > sol) {
+				cout << "Wrong, number he's thinking of is smaller than that..." << endl;
+				if (counter > 4) {
+					Player::healthBuff(-12);
+					if (Player::hp <= 0) {
+						Player::alive = false;
+					}
+				}
+			}
+			else {
+				cout << "Wrong, number he's thinking of is greater than that..." << endl;
+				if (counter > 4) {
+					Player::healthBuff(-12);
+					if (Player::hp <= 0) {
+						Player::alive = false;
+					}
+				}
+			}
+		}
+	}
+	void description() {
+		if (isCleared) {
+			cout << "This space is already cleared. Proceed to next one..." << endl;
+		}
+		else {
+			cout << "This is RookSpace! Rook is thinking of a number." << endl;
+		}
+	}
+	void checkSurroundings(Bag* bag) {
+		if (!checked) {
+			cout << "You found nothing..." << endl;
+			checked = true;
+		}
+		else {
+			cout << "You already checked this place." << endl;
+		}
+	}
+};
+
+class BishopSpace : public Space {
+private:
+	int hp;
+	void fireball() {
+		cout << "Bishop used Spell: Fireball" << endl;
+		Player::healthBuff(-20);
+	}
+	void spearstab() {
+		cout << "Bishop stabbed you with his spear" << endl;
+		Player::healthBuff(-15);
+	}
+public:
+	BishopSpace() {
+		this->skipable = true;
+		this->checked = false;
+		this->isCleared = false;
+		hp = 100;
+	}
+	~BishopSpace() {}
+	void challenge() {
+		if (isCleared) {
+			cout << "This space is already cleared. Proceed to next one..." << endl;
+		}
+		else {
+			cout << "This is BishopSpace! Bishop is loyal Queen's guard." << endl;
+			cout << "He seems to be guarding something of a great value. Prepare for fight" << endl;
+			while (!isCleared && Player::alive) {
+				while (Player::hp > 0 && hp > 0) {
+					for(int i = 0; i<Player::speed; i++){
+						cout << "________________________________________________" << endl;
+						cout << "What do you want to do? " << endl;
+						cout << "______________________________" << endl;
+						cout << "(1) Attack with weapon" << endl;
+						cout << "(2) Use lightning bolt" << endl;
+						cout << "(3) Check bag" << endl;
+						cout << "________________________________________________" << endl;
+						int ans = readNumber();
+						while (ans != 1 && ans != 2 && ans != 3) {
+							cout << "________________________________________________" << endl;
+							cout << "Wrong input! Try again..." << endl;
+							cout << "______________________________" << endl;
+							cout << "(1) Attack with weapon" << endl;
+							cout << "(2) Use lightning bolt" << endl;
+							cout << "(3) Check bag" << endl;
+							cout << "________________________________________________" << endl;
+							ans = readNumber();
+						}
+						if (ans == 1) {
+							hp -= Player::attack();
+							cout << "Bishop lost " << Player::attack() << " HP" << endl;
+						}
+						else if (ans == 2) {
+							hp -= Player::lightningbolt();
+							cout << "Bishop lost " << Player::lightningbolt() << " HP" << endl;
+						} else {
+							Player::bag->takeAction();
+						}
+					}
+					if (hp>0) {
+						int t = rand() % 100;
+						if (t < 85) {
+							spearstab();
+						}
+						else {
+							fireball();
+						}
+						t = rand() % 100;
+						if (t < 85) {
+							spearstab();
+						}
+						else {
+							fireball();
+						}
+					}
+				}
+				if (Player::hp <= 0) {
+					cout << "You lost." << endl;
+					Player::alive = false;
+				}
+				else {
+					cout << "You won." << endl;
+					cleared();
+					cout << "You got Queen's amulet! This item is important, don't lose it!" << endl;
+					Player::bag->addItem(new QueensAmulet());
+					Player::gainXP(35);
+					if (randChance(2)) {
+						cout << "You found Bishop's cloak! Do you want to place it in your bag? (y/n)" << endl;
+						char ans = readChar();
+						if (tolower(ans) == 'y') {
+							Player::bag->addItem(new BishopsCloak());
+						}
+					}
+					cout << "Challenge cleared!" << endl;
+				}
+			}
+		}
+	}
+	void description() {}
+	void checkSurroundings(Bag* bag) {
+		if (!checked) {
+			if (randChance(5)) { //one in 5 chance of getting a potion
+				cout << "You found potion! Do you want to place it in your bag? (y/n)" << endl;
+				char ans = readChar();
+				if (tolower(ans) == 'y') {
+					bag->addItem(new HealingPotion());
+				}
+			}
+			else { cout << "You found nothing..." << endl; }
+			checked = true;
+		}
+		else {
+			cout << "You already checked this place." << endl;
+		}
+	}
+};
+
+class KnightSpace : public Space {
+private:
+	int answer;
+	int failedPersuade;
+	int persuaded;
+	int honorableAnswers;
+public:
+	KnightSpace() {
+		failedPersuade = 0;
+		persuaded = 0;
+		honorableAnswers = 0;
+		this->checked = false;
+		this->isCleared = false;
+		this->skipable = false;
+	}
+	~KnightSpace() {
+	
+	}
+	void challenge() {
+		description();
+		while (!isCleared) {
+			cout << "You spot the knight standing in front of you. Even though he is old,";
+			cout << " he still looks strong. He wants to have a chat with you" << endl;
+			cout << "________________________________________________" << endl;
+			cout << "First question: You found bag of coins in tavern. What do you do?" << endl;
+			cout << "______________________________" << endl;
+			cout << "\t(1) Ask innkeeper if he knows whose money it is" << endl;
+			cout << "\t(2) Keep money for yourself" << endl;
+			cout << "\t(3) Split the money with you (persuade)" << endl;
+			cout << "________________________________________________" << endl;
+			answer = readNumber();
+			while (answer < 1 || answer>3) {
+				cout << "Please insert number 1, 2 or 3" << endl;
+				answer = readNumber();
+			}
+			if (answer == 1) { honorableAnswers++; }
+			if (answer == 3) {
+				if (randChance(2)) {
+					persuaded++;
+				}
+				else {
+					failedPersuade++;
+				}
+			}
+			cout << "________________________________________________" << endl;
+			cout << "Okay, next question." << endl;
+			cout << "A beggar asks you for money. What do you do?" << endl;
+			cout << "______________________________" << endl;
+			cout << "\t(1) I just walk by. I don't care about him" << endl;
+			cout << "\t(2) Give him 5 coins, he seems hungry" << endl;
+			cout << "\t(3) I don't give him anything, we could go for a beer instead (persuade)" << endl;
+			cout << "________________________________________________" << endl;
+			answer = readNumber();
+			while (answer < 1 || answer>3) {
+				cout << "Please insert number 1, 2 or 3" << endl;
+				answer = readNumber();
+			}
+			if (answer == 2) { honorableAnswers++; }
+			if (answer == 3) {
+				if (randChance(2 + failedPersuade)) {
+					persuaded++;
+				}
+				else {
+					failedPersuade++;
+				}
+			}
+			cout << "________________________________________________" << endl;
+			cout << "Final question." << endl;
+			cout << "You see a bandit attacking innocent villagers. What do you do?" << endl;
+			cout << "______________________________" << endl;
+			cout << "\t(1) Join him in attacking, there might be some good loot (persuade)" << endl;
+			cout << "\t(2) I pretend like I don't notice that" << endl;
+			cout << "\t(3) I try to protect them" << endl;
+			cout << "________________________________________________" << endl;
+			answer = readNumber();
+			while (answer < 1 || answer>3) {
+				cout << "Please insert number 1, 2 or 3" << endl;
+				answer = readNumber();
+			}
+			if (answer == 3) { honorableAnswers++; }
+			if (answer == 1) {
+				if (randChance(2 + failedPersuade)) {
+					persuaded++;
+				}
+				else {
+					failedPersuade++;
+				}
+			}
+			if (failedPersuade == 3) {
+				cout << "Knight is angry at you, and he slashes you with his sword." << endl;
+				Player::healthBuff(-50);
+				if (Player::hp > 0) {
+					cout << "Still, he has no intent of fighting you, since he thinks you're not worthy of his blade." << endl;
+					Player::gainXP(30);
+				}
+				else {
+					Player::alive = false;
+				}
+				
+			} else 
+				if (persuaded == 3) {
+				cout << "Knight smirks at you. He gives you his blade" << endl;
+				Player::pickUpItem(new DarkKnightBlade());
+				Player::gainXP(40);
+			} else
+				if (honorableAnswers == 3) {
+					cout << "Knight is proud of you. He gives you his spear" << endl;
+					if (randChance(5)) {
+						cout << "You got enchantment: Knight's honor. +5 Attack" << endl;
+						Player::atk += 5;
+					}
+					Player::pickUpItem(new KnightsSpear());
+					Player::gainXP(40);
+			} else {
+					Player::gainXP(30);
+					if (randChance(3)) {
+						cout << "Knight gives you his spear, saying he won't be needing it anymore." << endl;
+						Player::pickUpItem(new KnightsSpear());
+				}
+			}
+			cout << "Knight says that you are free to roam this place, he won't be bothering you." << endl;
+			cleared();
+			skipable = true;
+		}
+	}
+	void description() {
+		if (isCleared) {
+			cout << "This space is already cleared. Proceed to next one..." << endl;
+		}
+		else {
+			cout << "This is KnightSpace! Test your honor!" << endl;
+		}
+	}
+	void checkSurroundings(Bag* bag) {
+		if (!checked) {
+			cout << "You found potion! Do you want to place it in your bag? (y/n)" << endl;
+			char ans = readChar();
+			if (tolower(ans) == 'y') {
+				bag->addItem(new HealingPotion());
+			}
+		}
+		else {
+			cout << "You already checked this place." << endl;
+		}
+	}
+};
+
+class QueenSpace : public Space {
+private:
+	int hp;
+	int pedestals;
+	bool awake;
+	int def;
+	void fireball() { 
+		cout << "Queen used Spell: Fireball" << endl;
+		Player::healthBuff(-25);
+	}
+	void firestorm() {
+		cout << "Queen used Spell: Firestorm" << endl;
+		Player::healthBuff(-40);
+	}
+	void guarded() {
+		cout << "Queen used Enchantment: Guarded" << endl;
+		def = 25;
+	}
+public:
+	QueenSpace() {
+		hp = 200;
+		pedestals = 0;
+		awake = false;
+		def = 15;
+		this->skipable = true;
+		this->isCleared = false;
+		this->checked = false;
+	}
+	~QueenSpace() {}
+	void description() {
+		if (!awake) {
+			cout << "This is QueenSpace. You can see the Queen asleep in her throne." << endl;
+			cout << "There are three pedestals in front of the Queen. Maybe there's some meaning?" << endl;
+		}
+		else if(isCleared) {
+			cout << "This space is already cleared. Proceed to next one..." << endl;
+		}
+	}
+	void challenge() {
+		description();
+		if (awake && !isCleared) {
+			cout << "Queen is awake! Prepare for battle..." << endl;
+			while (Player::hp > 0 && hp > 0) {
+				for (int i = 0; i < Player::speed; i++) {
+					cout << "________________________________________________" << endl;
+					cout << "What do you want to do? " << endl;
+					cout << "______________________________" << endl;
+					cout << "(1) Attack with weapon" << endl;
+					cout << "(2) Use lightning bolt" << endl;
+					cout << "(3) Check bag" << endl;
+					cout << "________________________________________________" << endl;
+					int ans = readNumber();
+					while (ans != 1 && ans != 2 && ans != 3) {
+						cout << "________________________________________________" << endl;
+						cout << "Wrong input! Try again..." << endl;
+						cout << "______________________________" << endl;
+						cout << "(1) Attack with weapon" << endl;
+						cout << "(2) Use lightning bolt" << endl;
+						cout << "(3) Check bag" << endl;
+						cout << "________________________________________________" << endl;
+						ans = readNumber();
+					}
+					if (ans == 1) {
+						hp -= Player::attack() - def;
+						cout << "Queen lost " << Player::attack() - def << " HP" << endl;
+					}
+					else if (ans == 2) {
+						hp -= Player::lightningbolt() - def;
+						cout << "Queen lost " << Player::lightningbolt() - def << " HP" << endl;
+					}
+					else {
+						Player::bag->takeAction();
+					}
+				}
+				if (hp > 0) {
+					int t = rand() % 100;
+					if (t < 85) {
+						fireball();
+					}
+					else if (t < 95) {
+						guarded();
+					}
+					else {
+						firestorm();
+					}
+				}
+			}
+			if (Player::hp <= 0) {
+				cout << "You lost" << endl;
+				Player::alive = false;
+			}
+			else {
+				cout << "You won" << endl;
+				cleared();
+				Player::gainXP(80);
+				cout << "You got enchantment: Queen's blessing. +5 Defense, +10 Attack" << endl;
+				Player::atk += 10;
+				Player::def += 5;
+			}
+		}
+	}
+	void checkSurroundings(Bag* bag) {
+		if (!checked) {
+			cout << "You found potion! Do you want to place it in your bag? (y/n)" << endl;
+			char ans = readChar();
+			if (tolower(ans) == 'y') {
+				bag->addItem(new HealingPotion());
+			}
+			checked = true;
+		}
+		if (!awake) {
+			cout << "Do you want to place item here? (y/n)" << endl;
+			char ans = readChar();
+			if (tolower(ans) == 'y') {
+				if (bag->placeItem()) {
+					cout << "Queen's amulet placed on pedestal." << endl;
+					pedestals++;
+					if (pedestals == 3) {
+						awake = true;
+					}
+				}
+				else {
+					cout << "There is no item to be placed" << endl;
+				}
+			}
+		} else { 
+			cout << "This space is already cleared. Proceed to next one..." << endl;
+		}
+	}
+};
+
+class KingSpace : public Space {
+private:
+	int hp;
+	int atk;
+	int def;
+	void swordslash() {
+		cout << "King used sword slash." << endl;
+		Player::healthBuff(-35-atk);
+	}
+	void swordstab() {
+		cout << "King stabbed you with his sword." << endl;
+		Player::healthBuff(-60-atk);
+	}
+	void guarded() { 
+		cout << "King used Enchantment: Guarded" << endl;
+		def = 30;
+	}
+	void fury() { 
+		cout << "King used Enchantment: Fury" << endl;
+		atk = 15;
+	}
+public:
+	KingSpace() {
+		hp = 300;
+		def = 15;
+		atk = 15;
+		this->skipable = false;
+		this->isCleared = false;
+		this->checked = false;
+	}
+	~KingSpace() {}
+	void description() {
+			cout << "This is KingSpace. You successfully cleared all other spaces." << endl;
+			cout << "King slowly stands up from his throne, ready to avenge his fallen subjects." << endl;
+	}
+	void challenge() {
+		if (counter::counter == 14) {
+			description();
+			cout << "King is angry! Prepare for battle..." << endl;
+			while (Player::hp > 0 && hp > 0) {
+				for (int i = 0; i < Player::speed; i++) {
+					cout << "________________________________________________" << endl;
+					cout << "What do you want to do? " << endl;
+					cout << "______________________________" << endl;
+					cout << "(1) Attack with weapon" << endl;
+					cout << "(2) Use lightning bolt" << endl;
+					cout << "(3) Check bag" << endl;
+					cout << "________________________________________________" << endl;
+					int ans = readNumber();
+					while (ans != 1 && ans != 2 && ans != 3) {
+						cout << "________________________________________________" << endl;
+						cout << "Wrong input! Try again..." << endl;
+						cout << "______________________________" << endl;
+						cout << "(1) Attack with weapon" << endl;
+						cout << "(2) Use lightning bolt" << endl;
+						cout << "(3) Check bag" << endl;
+						cout << "________________________________________________" << endl;
+						ans = readNumber();
+					}
+					if (ans == 1) {
+						hp -= Player::attack() - def;
+						cout << "King lost " << Player::attack() - def << " HP" << endl;
+					}
+					else if (ans == 2) {
+						hp -= Player::lightningbolt() - def;
+						cout << "King lost " << Player::lightningbolt() - def << " HP" << endl;
+					}
+					else {
+						Player::bag->takeAction();
+					}
+				}
+				if (hp > 0) {
+					int t = rand() % 100;
+					if (t < 85) {
+						swordslash();
+					}
+					else if (t < 90) {
+						guarded();
+					}
+					else if (t < 95) {
+						fury();
+					}
+					else {
+						swordstab();
+					}
+				}
+			}
+			if (Player::hp <= 0) {
+				cout << "You lost" << endl;
+				Player::alive = false;
+			}
+			else {
+				cout << "You won" << endl;
+				cleared();
+			}
+		}
+		else { 
+			cout << "You are still too weak to fight the king" << endl;
+		}
+	}
+	void checkSurroundings(Bag* bag) {
+		if (!checked) {
+			cout << "You found potion! Do you want to place it in your bag? (y/n)" << endl;
+			char ans = readChar();
+			if (tolower(ans) == 'y') {
+				bag->addItem(new HealingPotion());
+			}
+			checked = true;
+		} else {
+			cout << "You already checked this place." << endl;
+		}
+	}
+};
+
+class Game {
+private:
+	int playerMap [3][5];
+	int curr_i, curr_j;
+	void openBag() { Player::bag->takeAction(); }
+	void challenge() { currentSpace->challenge(); }
+	void leaveRoom() { 
+		if (currentSpace->escape()) {
+			bool success = false;
+			int ans = -1;
+			while(!success){
+				cout << "________________________________________________" << endl;
+				cout << "Which door you want to go through? " << endl;
+				cout << "______________________________" << endl;
+				cout << "(1) Northern door" << endl;
+				cout << "(2) Southern door" << endl;
+				cout << "(3) Eastern door" << endl;
+				cout << "(4) Western door" << endl;
+				cout << "(5) Cancel" << endl;
+				cout << "________________________________________________" << endl;
+				ans = readNumber();
+				if (ans == 1 || ans == 2 || ans == 3 || ans == 4 || ans == 5) {
+					success = true;
+				}
+			}
+			if (ans == 1 && currentSpace->checkPass('t')) {
+				cout << "Room changed successfully " << endl;
+				playerMap[curr_i][curr_j] = 0;
+				curr_i--;
+				playerMap[curr_i][curr_j] = 1;
+				currentSpace = currentSpace->getNeigh('t');
+			} else if (ans == 2 && currentSpace->checkPass('b')) {
+				cout << "Room changed successfully " << endl;
+				playerMap[curr_i][curr_j] = 0;
+				curr_i++;
+				playerMap[curr_i][curr_j] = 1;
+				currentSpace = currentSpace->getNeigh('b');
+			}
+			else if (ans == 3 && currentSpace->checkPass('r')) {
+				cout << "Room changed successfully " << endl;
+				playerMap[curr_i][curr_j] = 0;
+				curr_j++;
+				playerMap[curr_i][curr_j] = 1;
+				currentSpace = currentSpace->getNeigh('r');
+			}
+			else if (ans == 4 && currentSpace->checkPass('l')) {
+				cout << "Room changed successfully " << endl;
+				playerMap[curr_i][curr_j] = 0;
+				curr_j--;
+				playerMap[curr_i][curr_j] = 1;
+				currentSpace = currentSpace->getNeigh('l');
+			} else if (ans == 5) {
+				cout << "Cancelled " << endl;
+			} else {
+				cout << "You can't go there... " << endl;
+			}
+		}
+		else {
+			cout << "You can't leave this room yet..." << endl;
+		}
+	}
+	void checkSurroundings() { currentSpace->checkSurroundings(Player::bag); }
+	void checkStats() { Player::showStatus(); }
+	void displayMap() {
+		cout << "Drawing map..." << endl;
+		cout << "__________________________" << endl;
+		cout << "| ES | PS | BS | PS | QS | " << endl;
+		cout << "| " << playerMap[0][0] << "  | " << playerMap[0][1] << "  | " << playerMap[0][2] << "  | " << playerMap[0][3] << "  | " << playerMap[0][4] << "  |" << endl;
+		cout << "__________________________" << endl;
+		cout << "| PS | RS | PS | NS | RS | " << endl;
+		cout << "| " << playerMap[1][0] << "  | " << playerMap[1][1] << "  | " << playerMap[1][2] << "  | " << playerMap[1][3] << "  | " << playerMap[1][4] << "  |" << endl;
+		cout << "__________________________" << endl;
+		cout << "| BS | PS | RS | BS | KS | " << endl;
+		cout << "| " << playerMap[2][0] << "  | " << playerMap[2][1] << "  | " << playerMap[2][2] << "  | " << playerMap[2][3] << "  | " << playerMap[2][4] << "  |" << endl;
+		cout << "__________________________" << endl;
+		cout << "Legend: " << endl;
+		cout << "\t 1 - Your location" << endl;
+		cout << "\t ES - Entrance" << endl;
+		cout << "\t PS - Pawn's room" << endl;
+		cout << "\t BS - Bishop's office" << endl;
+		cout << "\t RS - Rook's quarters" << endl;
+		cout << "\t NS - Knight's chamber" << endl;
+		cout << "\t QS - Queen's throne" << endl;
+		cout << "\t KS - King's throne" << endl;
+	}
+	Space* currentSpace;
+	Space* sp11, *sp12, *sp13, *sp14, *sp15;
+	Space* sp21, *sp22, *sp23, *sp24, *sp25;
+	Space* sp31, *sp32, *sp33, *sp34, *sp35;
+public:
+	Game() {}
+	~Game() {
+		sp11->setSides(NULL, NULL, NULL, NULL);
+		sp12->setSides(NULL, NULL, NULL, NULL);
+		sp13->setSides(NULL, NULL, NULL, NULL);
+		sp14->setSides(NULL, NULL, NULL, NULL);
+		sp15->setSides(NULL, NULL, NULL, NULL);
+		//
+		sp21->setSides(NULL, NULL, NULL, NULL);
+		sp22->setSides(NULL, NULL, NULL, NULL);
+		sp23->setSides(NULL, NULL, NULL, NULL);
+		sp24->setSides(NULL, NULL, NULL, NULL);
+		sp25->setSides(NULL, NULL, NULL, NULL);
+		//
+		sp31->setSides(NULL, NULL, NULL, NULL);
+		sp32->setSides(NULL, NULL, NULL, NULL);
+		sp33->setSides(NULL, NULL, NULL, NULL);
+		sp34->setSides(NULL, NULL, NULL, NULL);
+		sp35->setSides(NULL, NULL, NULL, NULL);
+		delete sp11;
+		delete sp12;
+		delete sp13;
+		delete sp14;
+		delete sp15;
+		//
+		delete sp21;
+		delete sp22;
+		delete sp23;
+		delete sp24;
+		delete sp25;
+		//
+		delete sp31;
+		delete sp32;
+		delete sp33;
+		delete sp34;
+		delete sp35;
+		//
+	}
+	void generateMap() {
+		sp11 = new EmptySpace();
+		sp12 = new PawnSpace();
+		sp13 = new BishopSpace();
+		sp14 = new PawnSpace();
+		sp15 = new QueenSpace();
+		//
+		sp21 = new PawnSpace();
+		sp22 = new RookSpace();
+		sp23 = new PawnSpace();
+		sp24 = new KnightSpace();
+		sp25 = new RookSpace();
+		//
+		sp31 = new BishopSpace();
+		sp32 = new PawnSpace();
+		sp33 = new RookSpace();
+		sp34 = new BishopSpace();
+		sp35 = new KingSpace();
+		//linking all spaces
+		sp11->setSides(NULL, sp21, NULL, sp12);
+		sp12->setSides(NULL, sp22, sp11, sp13);
+		sp13->setSides(NULL, sp23, sp12, sp14);
+		sp14->setSides(NULL, sp24, sp13, sp15);
+		sp15->setSides(NULL, sp25, sp14, NULL);
+		//
+		sp21->setSides(sp11, sp31, NULL, sp22);
+		sp22->setSides(sp12, sp32, sp21, sp23);
+		sp23->setSides(sp13, sp33, sp22, sp24);
+		sp24->setSides(sp14, sp34, sp23, sp25);
+		sp25->setSides(sp15, sp35, sp24, NULL);
+		//
+		sp31->setSides(sp21, NULL, NULL, sp32);
+		sp32->setSides(sp22, NULL, sp31, sp33);
+		sp33->setSides(sp23, NULL, sp32, sp34);
+		sp34->setSides(sp24, NULL, sp33, sp35);
+		sp35->setSides(sp25, NULL, sp34, NULL);
+		currentSpace = sp11;
+		//locating player
+		playerMap[0][0] = 1;
+		playerMap[0][1] = 0;
+		playerMap[0][2] = 0;
+		playerMap[0][3] = 0;
+		playerMap[0][4] = 0;
+		//
+		playerMap[1][0] = 0;
+		playerMap[1][1] = 0;
+		playerMap[1][2] = 0;
+		playerMap[1][3] = 0;
+		playerMap[1][4] = 0;
+		//
+		playerMap[2][0] = 0;
+		playerMap[2][1] = 0;
+		playerMap[2][2] = 0;
+		playerMap[2][3] = 0;
+		playerMap[2][4] = 0;
+		//
+		curr_i = 0;
+		curr_j = 0;
+	}
+	void startGame() {
+		//creating all needed spaces
+		generateMap();
+		////STARTING GAME ///// 
+
+		cout << "You stand at the door of a castle. "<< endl <<
+			"Legend says that the castle is inhabited by the old king and his subjects." << endl;
+		cout << "You came here seeking adventure, glory and treasure." << endl;
+		cout << "But the king is not going to let you just walk in and take his property" << endl;
+		cout << "He is ready to raise his sword and army to take you down if necessary " << endl;
+		cout << "You slowly open the door, ready to explore..." << endl;
+		currentSpace->description();
+		while (Player::alive && counter::counter<15) {
+			cout << "________________________________________________" << endl;
+			cout << "What do you want to do? " << endl;
+			cout << "______________________________" << endl;
+			cout << "(1) Check surroundings" << endl;
+			cout << "(2) Challenge" << endl;
+			cout << "(3) Leave room" << endl;
+			cout << "(4) Check stats" << endl;
+			cout << "(5) Check bag" << endl;
+			cout << "(6) Display map" << endl;
+			cout << "________________________________________________" << endl;
+			int ans = readNumber();
+			while (ans != 1 && ans != 2 && ans != 3 && ans != 4 && ans != 5 && ans != 6) {
+				cout << "________________________________________________" << endl;
+				cout << "What do you want to do? " << endl;
+				cout << "______________________________" << endl;
+				cout << "(1) Check surroundings" << endl;
+				cout << "(2) Challenge" << endl;
+				cout << "(3) Leave room" << endl;
+				cout << "(4) Check stats" << endl;
+				cout << "(5) Check bag" << endl;
+				cout << "(6) Display map" << endl;
+				cout << "________________________________________________" << endl;
+				int ans = readNumber();
+			}
+			switch (ans) {
+			case 1: 
+				this->checkSurroundings();
+				break;
+			case 2:
+				this->challenge();
+				break;
+			case 3:
+				this->leaveRoom();
+				break;
+			case 4:
+				this->checkStats();
+				break;
+			case 5:
+				this->openBag();
+				break;
+			case 6:
+				this->displayMap();
+				break;
+			}	
+		}
+		if (Player::alive) {
+			cout << "You cleared the game" << endl;
+		}
+		else {
+			cout << "You lost the game" << endl;
+		}
+	}
+	
+};
+
+int main()
+{
+	srand(time(0));
+	Game game;
+	game.startGame();
+    	return 0;
+}
+
+g++ ConsoleApplication11.cpp Game.cpp Player.cpp Space.cpp Counter.cpp Bag.cpp KingSpace.cpp HealingPotion.cpp RookSpace.cpp BishopSpace.cpp QueensAmulet.cpp PawnSpace.cpp KnightSpace.cpp Item.cpp EmptySpace.cpp KnightsSpear.cpp DarkKnightBlade.cpp BishopsCloak.cpp QueenSpace.cpp -o output
